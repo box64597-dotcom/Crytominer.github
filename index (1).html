@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>CryptoMiner Tap & Crash</title>
+  <!-- SDK Oficial de Telegram Web App -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-card: #101528;
+      --bg-card-alt: #161d36;
+      --border-glow: rgba(0, 240, 255, 0.22);
+      --neon-cyan: #00f0ff;
+      --neon-purple: #8b5cf6;
+      --neon-green: #00ff88;
+      --neon-gold: #fbbf24;
+      --neon-red: #ff3366;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --nav-height: 70px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(139, 92, 246, 0.14), transparent 38%),
+        radial-gradient(circle at 85% 80%, rgba(0, 240, 255, 0.12), transparent 40%);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    /* Layout Principal */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      max-width: 520px;
+      margin: 0 auto;
+      padding-bottom: calc(var(--nav-height) + 16px);
+    }
+
+    /* Header Superior */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(7, 9, 19, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: #050811;
+      flex-shrink: 0;
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+    }
+
+    .user-meta {
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-id {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .balance-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 14px;
+      padding: 6px 12px;
+      text-align: right;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.08);
+      flex-shrink: 0;
+    }
+
+    .balance-coins {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--neon-gold);
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .balance-usdt {
+      font-size: 11px;
+      color: var(--neon-green);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Vistas / Pestañas */
+    .tab-view {
+      display: none;
+      padding: 14px;
+      flex: 1;
+      flex-direction: column;
+      gap: 14px;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .tab-view.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tarjetas Generales */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: rgba(0, 240, 255, 0.14);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+
+    .badge.green {
+      background: rgba(0, 255, 136, 0.14);
+      color: var(--neon-green);
+      border-color: rgba(0, 255, 136, 0.3);
+    }
+
+    .badge.gold {
+      background: rgba(251, 191, 36, 0.14);
+      color: var(--neon-gold);
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    .badge.red {
+      background: rgba(255, 51, 102, 0.16);
+      color: var(--neon-red);
+      border-color: rgba(255, 51, 102, 0.35);
+    }
+
+    /* Botones */
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+      color: #050811;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-cyan {
+      background: linear-gradient(135deg, var(--neon-cyan), #3b82f6);
+      color: #040814;
+      box-shadow: 0 4px 18px rgba(0, 240, 255, 0.28);
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--neon-green), #10b981);
+      color: #04120c;
+      box-shadow: 0 4px 18px rgba(0, 255, 136, 0.28);
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--neon-gold), #f59e0b);
+      color: #160f02;
+      box-shadow: 0 4px 18px rgba(251, 191, 36, 0.28);
+    }
+
+    .btn-purple {
+      background: linear-gradient(135deg, var(--neon-purple), #ec4899);
+      color: #ffffff;
+      box-shadow: 0 4px 18px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-outline {
+      background: var(--bg-card-alt);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 12px;
+      border-radius: 10px;
+      width: auto;
+    }
+
+    /* ================= MODO 1: TAP & ENERGÍA ================= */
+    .tap-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini-stat {
+      background: var(--bg-card-alt);
+      border-radius: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .mini-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .mini-stat-val {
+      font-size: 14px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tap-arena {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 0 12px;
+      overflow: hidden;
+    }
+
+    .tap-btn-outer {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      padding: 10px;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.25), rgba(139, 92, 246, 0.08) 70%);
+      box-shadow: 0 0 45px rgba(0, 240, 255, 0.22), inset 0 0 25px rgba(139, 92, 246, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.07s ease;
+    }
+
+    .tap-btn-outer.tapped {
+      transform: scale(0.93);
+    }
+
+    .tap-btn-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #1e2b58, #090d1f 75%);
+      border: 3px solid var(--neon-cyan);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 25px rgba(0, 240, 255, 0.35);
+      pointer-events: none;
+    }
+
+    .tap-coin-icon {
+      font-size: 54px;
+      filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.65));
+      margin-bottom: 4px;
+    }
+
+    .tap-label {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--neon-cyan);
+    }
+
+    .tap-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Partículas flotantes al tocar */
+    .floating-particle {
+      position: absolute;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--neon-gold);
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+      pointer-events: none;
+      animation: floatUp 0.85s ease-out forwards;
+      z-index: 20;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translate(-50%, 0) scale(0.9); }
+      100% { opacity: 0; transform: translate(-50%, -85px) scale(1.25); }
+    }
+
+    /* Barra de energía */
+    .energy-wrap {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .energy-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 12px;
+      background: #070a15;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    .bonus-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .bonus-card {
+      background: var(--bg-card-alt);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .bonus-card h4 {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bonus-card p {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* ================= MODO 2: COHETE CRASH ================= */
+    .crash-history {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .crash-history::-webkit-scrollbar { display: none; }
+
+    .crash-pill {
+      flex-shrink: 0;
+      padding: 4px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .crash-pill.low { color: var(--neon-red); background: rgba(255, 51, 102, 0.14); }
+    .crash-pill.mid { color: var(--neon-cyan); background: rgba(0, 240, 255, 0.14); }
+    .crash-pill.high { color: var(--neon-green); background: rgba(0, 255, 136, 0.16); }
+
+    .canvas-box {
+      position: relative;
+      width: 100%;
+      height: 230px;
+      background: radial-gradient(circle at 50% 90%, #131c3d, #060913 80%);
+      border-radius: 16px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      overflow: hidden;
+    }
+
+    #crashCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .crash-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .crash-multiplier {
+      font-size: 44px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 22px rgba(0, 240, 255, 0.45);
+      letter-spacing: -1px;
+    }
+
+    .crash-status-text {
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 4px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(7, 9, 19, 0.72);
+    }
+
+    .bet-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .input-field, .select-field {
+      width: 100%;
+      background: #080b16;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 11px 12px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .input-field:focus, .select-field:focus {
+      border-color: var(--neon-cyan);
+    }
+
+    .quick-bets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .quick-bet-btn {
+      background: var(--bg-card-alt);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .double-win-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(139, 92, 246, 0.2));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      border-radius: 14px;
+      padding: 12px;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .double-win-banner.visible { display: flex; }
+
+    /* ================= BILLETERA & REFERIDOS ================= */
+    .wallet-hero {
+      background: linear-gradient(135deg, #131b3a, #0e1328);
+      border: 1px solid var(--border-glow);
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .wallet-hero-coins {
+      font-size: 30px;
+      font-weight: 900;
+      color: var(--neon-gold);
+      font-variant-numeric: tabular-nums;
+      margin: 4px 0;
+    }
+
+    .wallet-hero-usdt {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--neon-green);
+    }
+
+    .sub-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-card);
+      padding: 5px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sub-tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .sub-tab-btn.active {
+      background: var(--bg-card-alt);
+      color: var(--neon-cyan);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    .copy-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #080b16;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .copy-text {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--neon-cyan);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tx-item {
+      background: var(--bg-card-alt);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .tx-info {
+      min-width: 0;
+    }
+
+    .tx-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tx-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 210px;
+    }
+
+    /* Barra de Navegación Inferior */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 520px;
+      height: var(--nav-height);
+      background: rgba(10, 14, 28, 0.94);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      z-index: 60;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .nav-btn.active {
+      color: var(--neon-cyan);
+    }
+
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* Modales (Anuncios y Ruleta) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 14, 0.88);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-card {
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 22px;
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+    }
+
+    .wheel-pointer {
+      font-size: 24px;
+      margin-bottom: -10px;
+      z-index: 5;
+      color: var(--neon-gold);
+    }
+
+    .wheel-circle {
+      width: 210px;
+      height: 210px;
+      margin: 0 auto;
+      border-radius: 50%;
+      border: 5px solid var(--neon-cyan);
+      background: conic-gradient(
+        #1e293b 0deg 60deg,
+        #312e81 60deg 120deg,
+        #0f766e 120deg 180deg,
+        #7c2d12 180deg 240deg,
+        #4c1d95 240deg 300deg,
+        #065f46 300deg 360deg
+      );
+      position: relative;
+      transition: transform 3.5s cubic-bezier(0.12, 0.85, 0.15, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+    }
+
+    .wheel-center {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      border: 2px solid var(--neon-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      z-index: 2;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 120;
+      width: calc(100% - 32px);
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(16, 21, 40, 0.96);
+      border: 1px solid var(--neon-cyan);
+      color: var(--text-main);
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+      animation: fadeIn 0.2s ease;
+    }
+
+    .toast.error { border-color: var(--neon-red); color: #fecdd3; }
+    .toast.success { border-color: var(--neon-green); color: #bbf7d0; }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- HEADER -->
+    <header class="top-header">
+      <div class="user-pill">
+        <div class="avatar" id="userAvatar">U</div>
+        <div class="user-meta">
+          <div class="user-name" id="userName">Cargando...</div>
+          <div class="user-id" id="userIdDisplay">ID: 000000</div>
+        </div>
+      </div>
+      <div class="balance-pill">
+        <div class="balance-coins">🪙 <span id="headerCoins">0</span></div>
+        <div class="balance-usdt">≈ $<span id="headerUsdt">0.0000</span> USDT</div>
+      </div>
+    </header>
+
+    <!-- ================= TAB 1: MINAR (TAP & ENERGÍA) ================= -->
+    <section id="tab-mine" class="tab-view active">
+      <div class="tap-stats-grid">
+        <div class="mini-stat">
+          <div class="mini-stat-label">Límite Diario Gratis</div>
+          <div class="mini-stat-val"><span id="dailyTapProgress">0</span> / <span id="dailyTapMax">500</span> 🪙</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-label">Anuncios Vistos</div>
+          <div class="mini-stat-val" style="color: var(--neon-cyan);">📺 <span id="adsWatchedStat">0</span></div>
+        </div>
+      </div>
+
+      <div class="card tap-arena" id="tapArena">
+        <div class="tap-btn-outer" id="tapBtn">
+          <div class="tap-btn-inner">
+            <div class="tap-coin-icon">🪙</div>
+            <div class="tap-label">TOCAR PARA MINAR</div>
+            <div class="tap-sub">+<span id="tapPowerLabel">1</span> COIN / toque</div>
+          </div>
+        </div>
+
+        <div class="energy-wrap">
+          <div class="energy-header">
+            <span>⚡ Energía</span>
+            <span id="energyText">100 / 100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="energyBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-cyan" id="btnRechargeAd">
+        ⚡ Recargar Energía (+100%) y +250 Límite (Ver Anuncio)
+      </button>
+
+      <div class="bonus-grid">
+        <div class="bonus-card">
+          <div>
+            <h4>🎁 Cofre Misterioso</h4>
+            <p>Gana entre 50 y 250 COINS cada 15 minutos viendo 1 anuncio.</p>
+          </div>
+          <button class="btn btn-gold btn-sm" id="btnChestAd" style="width:100%;">Abrir Cofre</button>
+        </div>
+
+        <div class="bonus-card">
+          <div>
+            <h4>🎡 Ruleta Diaria</h4>
+            <p>Hasta 500 COINS o recarga total. Disponible <span id="wheelSpinsLeft">3</span>/3 hoy.</p>
+          </div>
+          <button class="btn btn-purple btn-sm" id="btnOpenWheel" style="width:100%;">Girar Ruleta</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: COHETE CRASH ================= -->
+    <section id="tab-crash" class="tab-view">
+      <div class="card" style="padding: 10px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; font-weight:700;">ÚLTIMAS 10 RONDAS</div>
+        <div class="crash-history" id="crashHistory"></div>
+      </div>
+
+      <div class="canvas-box">
+        <canvas id="crashCanvas"></canvas>
+        <div class="crash-overlay">
+          <div class="crash-multiplier" id="crashMultiplier">1.00x</div>
+          <div class="crash-status-text" id="crashStatus">Listo para despegar</div>
+        </div>
+      </div>
+
+      <!-- Banner para Duplicar Premio del Cohete -->
+      <div class="double-win-banner" id="doubleWinBanner">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:800; color:var(--neon-gold);">🔥 ¡Ganaste en la ronda anterior!</span>
+          <span class="badge gold" id="doubleWinAmount">+0 COINS</span>
+        </div>
+        <button class="btn btn-gold btn-sm" id="btnDoubleCrashAd" style="width:100%;">
+          📺 Duplicar Ganancia (Ver Anuncio)
+        </button>
+      </div>
+
+      <div class="card bet-controls">
+        <div class="input-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="input-label" for="crashBetInput">Apuesta (COINS)</label>
+            <span class="input-label">Saldo: <strong id="crashBalanceHint" style="color:var(--neon-gold)">0</strong></span>
+          </div>
+          <input type="number" id="crashBetInput" class="input-field" value="50" min="10" step="10" />
+        </div>
+
+        <div class="quick-bets">
+          <button class="quick-bet-btn" data-bet-action="min">Mín (10)</button>
+          <button class="quick-bet-btn" data-bet-action="half">1/2</button>
+          <button class="quick-bet-btn" data-bet-action="double">2x</button>
+          <button class="quick-bet-btn" data-bet-action="max">Máx</button>
+        </div>
+
+        <button class="btn btn-green" id="btnCrashAction">🚀 DESPEGAR COHETE</button>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: REFERIDOS ================= -->
+    <section id="tab-friends" class="tab-view">
+      <div class="card">
+        <div class="card-title">
+          <span>🤝 Invita y Gana 10%</span>
+          <span class="badge green">Sostenible</span>
+        </div>
+        <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+          Comparte tu enlace único de Telegram. Recibirás el <strong style="color:var(--neon-green);">10% en COINS</strong> de todo lo que tus invitados generen viendo anuncios recompensados.
+        </p>
+
+        <div class="input-label" style="margin-bottom:6px;">Tu enlace de invitación</div>
+        <div class="copy-box" style="margin-bottom:12px;">
+          <span class="copy-text" id="refLinkText">https://t.me/CryptoMinerBot?start=REF_0</span>
+          <button class="btn btn-cyan btn-sm" id="btnCopyRef">Copiar</button>
+        </div>
+
+        <button class="btn btn-purple" id="btnShareTelegram">📲 Compartir en Telegram</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Tus Estadísticas de Referidos</div>
+        <div class="tap-stats-grid">
+          <div class="mini-stat">
+            <div class="mini-stat-label">Invitados Activos</div>
+            <div class="mini-stat-val" id="refCountVal">0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-label">Comisión Generada</div>
+            <div class="mini-stat-val" style="color:var(--neon-gold);" id="refEarnedVal">0 🪙</div>
+          </div>
+        </div>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">
+          * El conteo global de referidos se sincroniza automáticamente al conectar tu backend (Firebase / Supabase).
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: BILLETERA ================= -->
+    <section id="tab-wallet" class="tab-view">
+      <div class="wallet-hero">
+        <div style="font-size:12px; color:var(--text-muted); font-weight:700;">BALANCE DISPONIBLE</div>
+        <div class="wallet-hero-coins">🪙 <span id="walletCoins">0</span></div>
+        <div class="wallet-hero-usdt">≈ $<span id="walletUsdt">0.0000</span> USDT</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Tasa fija: 10,000 COINS = 1.00 USDT</div>
+      </div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab-btn active" id="subTabWithdrawBtn">💸 Retirar</button>
+        <button class="sub-tab-btn" id="subTabDepositBtn">📥 Depositar</button>
+      </div>
+
+      <!-- SUB-VISTA RETIRAR -->
+      <div id="walletWithdrawPanel" class="card" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="card-title">
+          <span>Solicitar Retiro</span>
+          <span class="badge gold">Mín: 20,000 🪙 ($2.00)</span>
+        </div>
+
+        <div class="mini-stat">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span>Requisito de Anuncios Vistos</span>
+            <strong id="withdrawAdsReqText" style="color:var(--neon-cyan);">0 / 20</strong>
+          </div>
+          <div class="progress-track" style="height:8px;">
+            <div class="progress-fill" id="withdrawAdsReqBar" style="width:0%;"></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="withdrawMethod">Método de Retiro</label>
+          <select id="withdrawMethod" class="select-field">
+            <option value="Binance Pay ID">Binance Pay (Sin comisión)</option>
+            <option value="USDT BEP20">USDT (Red BEP20 / BSC)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="withdrawAddress">ID de Binance Pay o Dirección BEP20</label>
+          <input type="text" id="withdrawAddress" class="input-field" placeholder="Ej: 123456789 o 0x..." />
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="withdrawAmount">Cantidad en COINS (Mínimo 20,000)</label>
+          <input type="number" id="withdrawAmount" class="input-field" placeholder="20000" min="20000" step="1000" />
+        </div>
+
+        <button class="btn btn-green" id="btnSubmitWithdraw">Solicitar Retiro</button>
+      </div>
+
+      <!-- SUB-VISTA DEPOSITAR -->
+      <div id="walletDepositPanel" class="card" style="display:none; flex-direction:column; gap:12px;">
+        <div class="card-title">
+          <span>Depositar USDT</span>
+          <span class="badge">1 USDT = 10,000 🪙</span>
+        </div>
+
+        <div>
+          <div class="input-label" style="margin-bottom:4px;">Red BEP20 (BNB Smart Chain)</div>
+          <div class="copy-box">
+            <span class="copy-text" id="depositBep20Text">0x0000...</span>
+            <button class="btn btn-cyan btn-sm" id="btnCopyBep20">Copiar</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="input-label" style="margin-bottom:4px;">Binance Pay ID</div>
+          <div class="copy-box">
+            <span class="copy-text" id="depositBinanceText">000000000</span>
+            <button class="btn btn-cyan btn-sm" id="btnCopyBinance">Copiar</button>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08);" />
+
+        <div class="input-group">
+          <label class="input-label" for="depositAmountUsdt">Monto depositado (USDT)</label>
+          <input type="number" id="depositAmountUsdt" class="input-field" placeholder="Ej: 5.00" min="1" step="0.5" />
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="depositTxId">TXID / ID de Orden de Binance</label>
+          <input type="text" id="depositTxId" class="input-field" placeholder="Pega el hash o ID de orden" />
+        </div>
+
+        <button class="btn btn-cyan" id="btnSubmitDeposit">Enviar Solicitud de Acreditación</button>
+      </div>
+
+      <!-- HISTORIAL DE TRANSACCIONES -->
+      <div class="card">
+        <div class="card-title">📜 Historial de Transacciones</div>
+        <div class="tx-list" id="txHistoryList">
+          <div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px;">
+            Aún no tienes depósitos ni retiros registrados.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVEGACIÓN INFERIOR -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-tab="tab-mine">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span>Minar</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-crash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+        <span>Cohete</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-friends">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Amigos</span>
+      </button>
+      <button class="nav-btn" data-tab="tab-wallet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>Billetera</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODAL SIMULADOR DE ANUNCIO RECOMPENSADO -->
+  <div class="modal-backdrop" id="adModal">
+    <div class="modal-card">
+      <div class="badge" style="align-self:center;">ANUNCIO RECOMPENSADO</div>
+      <div style="font-size:44px;">📺</div>
+      <h3 style="font-size:18px;">Patrocinador CryptoMiner</h3>
+      <p style="font-size:13px; color:var(--text-muted);">
+        Espera a que finalice el anuncio para desbloquear tu recompensa y apoyar la economía del juego.
+      </p>
+      <div class="progress-track" style="height:14px;">
+        <div class="progress-fill" id="adProgressBar" style="width:0%; background:linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));"></div>
+      </div>
+      <div style="font-size:14px; font-weight:800; color:var(--neon-cyan);" id="adCountdownText">
+        Recompensa en 5s...
+      </div>
+      <button class="btn btn-outline btn-sm" id="btnCancelAd" style="align-self:center;">Cancelar (Sin recompensa)</button>
+    </div>
+  </div>
+
+  <!-- MODAL RULETA DIARIA -->
+  <div class="modal-backdrop" id="wheelModal">
+    <div class="modal-card">
+      <h3 style="font-size:18px;">🎡 Ruleta de Premios</h3>
+      <p style="font-size:12px; color:var(--text-muted);">Premios posibles: 50, 100, 150, 250, 500 COINS o +100% Energía.</p>
+      <div class="wheel-pointer">▼</div>
+      <div class="wheel-circle" id="wheelCircle">
+        <div class="wheel-center">🪙</div>
+      </div>
+      <div id="wheelResultText" style="font-size:14px; font-weight:800; color:var(--neon-gold); min-height:20px;"></div>
+      <button class="btn btn-purple" id="btnSpinWheelAd">📺 Ver Anuncio y Girar</button>
+      <button class="btn btn-outline btn-sm" id="btnCloseWheel" style="align-self:center;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    /* ==========================================================================
+       1. CONFIGURACIÓN GENERAL (EDITA ESTOS VALORES ANTES DE PUBLICAR)
+       ========================================================================== */
+    const CONFIG = {
+      BOT_USERNAME: "CryptoMinerTapBot", // Tu bot sin @ (para enlace de referidos)
+      USDT_BEP20_ADDRESS: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", // Tu wallet BEP20
+      BINANCE_PAY_ID: "482910384", // Tu Binance Pay ID
+      COINS_PER_USDT: 10000, // 10,000 COINS = 1.00 USDT
+      DAILY_FREE_TAP_LIMIT: 500, // Máximo de COINS minables gratis al día sin anuncios
+      AD_EXTRA_TAP_QUOTA: 250, // Cuota extra desbloqueada al ver anuncio de recarga
+      MAX_ENERGY: 100,
+      ENERGY_REGEN_MS: 2000, // +1 energía cada 2 segundos
+      CHEST_COOLDOWN_MS: 15 * 60 * 1000, // 15 minutos
+      DAILY_WHEEL_MAX_SPINS: 3,
+      MAX_CRASH_DOUBLE_BONUS: 2000, // Tope de bono por duplicar premio con anuncio (anti-quiebra)
+      MIN_WITHDRAW_COINS: 20000, // 20,000 COINS = 2.00 USDT
+      MIN_ADS_FOR_WITHDRAW: 20, // Mínimo de anuncios vistos para retirar
+      STORAGE_KEY: "cryptominer_tap_crash_v1"
+    };
+
+    /* ==========================================================================
+       2. INTEGRACIÓN TELEGRAM WEB APP
+       ========================================================================== */
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    let currentUser = {
+      id: "777888999",
+      firstName: "Minero Demo",
+      username: "demo_miner"
+    };
+
+    function initTelegram() {
+      if (tg) {
+        try {
+          tg.ready();
+          tg.expand();
+          if (tg.setHeaderColor) tg.setHeaderColor("#070913");
+          if (tg.setBackgroundColor) tg.setBackgroundColor("#070913");
+
+          const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+          if (tgUser) {
+            currentUser.id = String(tgUser.id);
+            currentUser.firstName = tgUser.first_name || "Minero";
+            currentUser.username = tgUser.username || "";
+          }
+        } catch (err) {
+          console.warn("Telegram WebApp init fallback:", err);
+        }
+      }
+
+      document.getElementById("userName").textContent = currentUser.firstName;
+      document.getElementById("userIdDisplay").textContent = `ID: ${currentUser.id}`;
+      document.getElementById("userAvatar").textContent = currentUser.firstName.charAt(0).toUpperCase();
+
+      const refUrl = `https://t.me/${CONFIG.BOT_USERNAME}?start=REF_${currentUser.id}`;
+      document.getElementById("refLinkText").textContent = refUrl;
+      document.getElementById("depositBep20Text").textContent = CONFIG.USDT_BEP20_ADDRESS;
+      document.getElementById("depositBinanceText").textContent = CONFIG.BINANCE_PAY_ID;
+    }
+
+    function triggerHaptic(type = "light") {
+      if (tg && tg.HapticFeedback) {
+        try {
+          if (type === "error" || type === "success" || type === "warning") {
+            tg.HapticFeedback.notificationOccurred(type);
+          } else {
+            tg.HapticFeedback.impactOccurred(type);
+          }
+        } catch (_) {}
+      }
+    }
+
+    /* ==========================================================================
+       3. ESTADO PERSISTENTE (LISTO PARA FIREBASE / SUPABASE)
+       ========================================================================== */
+    function getTodayString() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function createDefaultState() {
+      return {
+        userId: currentUser.id,
+        coins: 250, // Bono inicial de bienvenida para probar el cohete
+        energy: CONFIG.MAX_ENERGY,
+        lastEnergyTs: Date.now(),
+        tapPower: 1,
+        adsWatched: 0,
+        dailyDate: getTodayString(),
+        dailyTapCoins: 0,
+        dailyExtraTapQuota: 0,
+        wheelSpinsToday: 0,
+        lastChestTs: 0,
+        referrals: { count: 0, earnedCoins: 0 },
+        crashHistory: [1.42, 2.85, 1.05, 4.10, 1.88, 1.12, 3.24, 1.65, 2.15, 1.31],
+        transactions: []
+      };
+    }
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(`${CONFIG.STORAGE_KEY}_${currentUser.id}`);
+        if (!raw) return createDefaultState();
+        const parsed = JSON.parse(raw);
+        return { ...createDefaultState(), ...parsed };
+      } catch (e) {
+        return createDefaultState();
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(`${CONFIG.STORAGE_KEY}_${currentUser.id}`, JSON.stringify(state));
+        // PUNTO DE CONEXIÓN A SUPABASE / FIREBASE:
+        // syncStateToBackend(currentUser.id, state);
+      } catch (e) {
+        console.error("Error guardando estado:", e);
+      }
+    }
+
+    function checkDailyReset() {
+      const today = getTodayString();
+      if (state.dailyDate !== today) {
+        state.dailyDate = today;
+        state.dailyTapCoins = 0;
+        state.dailyExtraTapQuota = 0;
+        state.wheelSpinsToday = 0;
+        saveState();
+      }
+    }
+
+    /* ==========================================================================
+       4. UTILIDADES UI Y NAVEGACIÓN
+       ========================================================================== */
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 250);
+      }, 2800);
+    }
+
+    function formatCoins(num) {
+      return Math.floor(num).toLocaleString("es-ES");
+    }
+
+    function coinsToUsdt(coins) {
+      return (coins / CONFIG.COINS_PER_USDT).toFixed(4);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function updateUI() {
+      checkDailyReset();
+
+      const usdtVal = coinsToUsdt(state.coins);
+      document.getElementById("headerCoins").textContent = formatCoins(state.coins);
+      document.getElementById("headerUsdt").textContent = usdtVal;
+      document.getElementById("walletCoins").textContent = formatCoins(state.coins);
+      document.getElementById("walletUsdt").textContent = usdtVal;
+      document.getElementById("crashBalanceHint").textContent = formatCoins(state.coins);
+
+      // Stats Tap
+      const currentDailyLimit = CONFIG.DAILY_FREE_TAP_LIMIT + state.dailyExtraTapQuota;
+      document.getElementById("dailyTapProgress").textContent = formatCoins(state.dailyTapCoins);
+      document.getElementById("dailyTapMax").textContent = formatCoins(currentDailyLimit);
+      document.getElementById("adsWatchedStat").textContent = state.adsWatched;
+      document.getElementById("tapPowerLabel").textContent = state.tapPower;
+
+      // Energía
+      document.getElementById("energyText").textContent = `${state.energy} / ${CONFIG.MAX_ENERGY}`;
+      document.getElementById("energyBar").style.width = `${(state.energy / CONFIG.MAX_ENERGY) * 100}%`;
+
+      // Ruleta
+      const spinsLeft = Math.max(0, CONFIG.DAILY_WHEEL_MAX_SPINS - state.wheelSpinsToday);
+      document.getElementById("wheelSpinsLeft").textContent = spinsLeft;
+
+      // Referidos
+      document.getElementById("refCountVal").textContent = state.referrals.count;
+      document.getElementById("refEarnedVal").textContent = `${formatCoins(state.referrals.earnedCoins)} 🪙`;
+
+      // Requisitos de retiro
+      const adsProgress = Math.min(state.adsWatched, CONFIG.MIN_ADS_FOR_WITHDRAW);
+      document.getElementById("withdrawAdsReqText").textContent = `${state.adsWatched} / ${CONFIG.MIN_ADS_FOR_WITHDRAW}`;
+      document.getElementById("withdrawAdsReqBar").style.width = `${(adsProgress / CONFIG.MIN_ADS_FOR_WITHDRAW) * 100}%`;
+
+      renderCrashHistory();
+      renderTransactions();
+    }
+
+    // Navegación entre pestañas
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.dataset.tab;
+        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-view").forEach((v) => v.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(targetId).classList.add("active");
+        triggerHaptic("light");
+
+        if (targetId === "tab-crash") {
+          resizeCrashCanvas();
+        }
+      });
+    });
+
+    /* ==========================================================================
+       5. SISTEMA DE ANUNCIOS RECOMPENSADOS (MONETIZACIÓN)
+       ========================================================================== */
+    let activeAdTimer = null;
+
+    function showRewardedAd(onRewardCallback) {
+      // =========================================================================
+      // PEGAR AQUÍ CÓDIGO DE ADSTERRA / MONETAG / ADSGRAM
+      // Ejemplo Adsgram:
+      // window.Adsgram.init({ blockId: "TU_BLOCK_ID" }).show().then(() => {
+      //   state.adsWatched++; saveState(); updateUI(); onRewardCallback();
+      // }).catch(() => showToast("Debes ver el anuncio completo", "error"));
+      // return;
+      // =========================================================================
+
+      const modal = document.getElementById("adModal");
+      const progressBar = document.getElementById("adProgressBar");
+      const countdownText = document.getElementById("adCountdownText");
+      const btnCancel = document.getElementById("btnCancelAd");
+
+      modal.classList.add("open");
+      progressBar.style.width = "0%";
+      let elapsedMs = 0;
+      const totalMs = 5000;
+      const stepMs = 100;
+
+      if (activeAdTimer) clearInterval(activeAdTimer);
+
+      const cancelHandler = () => {
+        clearInterval(activeAdTimer);
+        modal.classList.remove("open");
+        btnCancel.removeEventListener("click", cancelHandler);
+        showToast("Anuncio cancelado. No recibiste la recompensa.", "error");
+      };
+      btnCancel.addEventListener("click", cancelHandler);
+
+      activeAdTimer = setInterval(() => {
+        elapsedMs += stepMs;
+        const pct = Math.min(100, (elapsedMs / totalMs) * 100);
+        const remainingSec = Math.ceil((totalMs - elapsedMs) / 1000);
+        progressBar.style.width = `${pct}%`;
+        countdownText.textContent = remainingSec > 0 ? `Recompensa en ${remainingSec}s...` : "¡Completado!";
+
+        if (elapsedMs >= totalMs) {
+          clearInterval(activeAdTimer);
+          btnCancel.removeEventListener("click", cancelHandler);
+          modal.classList.remove("open");
+
+          state.adsWatched += 1;
+          saveState();
+          updateUI();
+          triggerHaptic("success");
+
+          if (typeof onRewardCallback === "function") {
+            onRewardCallback();
+          }
+        }
+      }, stepMs);
+    }
+
+    /* ==========================================================================
+       6. MODO 1: TAP & ENERGÍA + COFRE + RULETA
+       ========================================================================== */
+    function regenEnergyTick() {
+      const now = Date.now();
+      const diff = now - state.lastEnergyTs;
+      if (diff >= CONFIG.ENERGY_REGEN_MS && state.energy < CONFIG.MAX_ENERGY) {
+        const gained = Math.floor(diff / CONFIG.ENERGY_REGEN_MS);
+        state.energy = Math.min(CONFIG.MAX_ENERGY, state.energy + gained);
+        state.lastEnergyTs = now;
+        saveState();
+        updateUI();
+      } else if (state.energy >= CONFIG.MAX_ENERGY) {
+        state.lastEnergyTs = now;
+      }
+    }
+    setInterval(regenEnergyTick, 1000);
+
+    function spawnTapParticle(clientX, clientY, amount) {
+      const arena = document.getElementById("tapArena");
+      const rect = arena.getBoundingClientRect();
+      const el = document.createElement("div");
+      el.className = "floating-particle";
+      el.textContent = `+${amount}`;
+      const x = clientX ? clientX - rect.left : rect.width / 2;
+      const y = clientY ? clientY - rect.top : rect.height / 2;
+      el.style.left = `${x}px`;
+      el.style.top = `${y - 15}px`;
+      arena.appendChild(el);
+      setTimeout(() => el.remove(), 850);
+    }
+
+    const tapBtn = document.getElementById("tapBtn");
+    tapBtn.addEventListener("pointerdown", (e) => {
+      checkDailyReset();
+
+      const maxAllowedToday = CONFIG.DAILY_FREE_TAP_LIMIT + state.dailyExtraTapQuota;
+      if (state.dailyTapCoins >= maxAllowedToday) {
+        triggerHaptic("error");
+        showToast("Límite diario alcanzado. ¡Mira un anuncio para recargar energía y +250 de límite!", "error");
+        return;
+      }
+
+      if (state.energy < state.tapPower) {
+        triggerHaptic("error");
+        showToast("Sin energía. Espera la recarga o mira un anuncio.", "error");
+        return;
+      }
+
+      state.energy -= state.tapPower;
+      state.coins += state.tapPower;
+      state.dailyTapCoins += state.tapPower;
+      state.lastEnergyTs = Date.now();
+
+      tapBtn.classList.add("tapped");
+      setTimeout(() => tapBtn.classList.remove("tapped"), 75);
+
+      triggerHaptic("light");
+      spawnTapParticle(e.clientX, e.clientY, state.tapPower);
+      saveState();
+      updateUI();
+    });
+
+    // Botón Recargar Energía con Anuncio
+    document.getElementById("btnRechargeAd").addEventListener("click", () => {
+      showRewardedAd(() => {
+        state.energy = CONFIG.MAX_ENERGY;
+        state.dailyExtraTapQuota += CONFIG.AD_EXTRA_TAP_QUOTA;
+        saveState();
+        updateUI();
+        showToast(`⚡ Energía al 100% y +${CONFIG.AD_EXTRA_TAP_QUOTA} COINS de límite diario desbloqueados.`, "success");
+      });
+    });
+
+    // Cofre Misterioso cada 15 min
+    function updateChestButton() {
+      const btn = document.getElementById("btnChestAd");
+      const now = Date.now();
+      const remaining = CONFIG.CHEST_COOLDOWN_MS - (now - state.lastChestTs);
+
+      if (remaining <= 0) {
+        btn.disabled = false;
+        btn.textContent = "🎁 Abrir Cofre (Anuncio)";
+      } else {
+        btn.disabled = true;
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        btn.textContent = `⏳ ${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      }
+    }
+    setInterval(updateChestButton, 1000);
+
+    document.getElementById("btnChestAd").addEventListener("click", () => {
+      if (Date.now() - state.lastChestTs < CONFIG.CHEST_COOLDOWN_MS) return;
+      showRewardedAd(() => {
+        const reward = Math.floor(Math.random() * 201) + 50; // 50 a 250 COINS
+        state.coins += reward;
+        state.lastChestTs = Date.now();
+        saveState();
+        updateUI();
+        updateChestButton();
+        showToast(`🎁 ¡Cofre abierto! Ganaste +${reward} COINS.`, "success");
+      });
+    });
+
+    // Ruleta Diaria
+    const wheelModal = document.getElementById("wheelModal");
+    const wheelCircle = document.getElementById("wheelCircle");
+    let wheelRotation = 0;
+    let isSpinning = false;
+
+    document.getElementById("btnOpenWheel").addEventListener("click", () => {
+      document.getElementById("wheelResultText").textContent = "";
+      wheelModal.classList.add("open");
+    });
+
+    document.getElementById("btnCloseWheel").addEventListener("click", () => {
+      if (!isSpinning) wheelModal.classList.remove("open");
+    });
+
+    document.getElementById("btnSpinWheelAd").addEventListener("click", () => {
+      checkDailyReset();
+      if (isSpinning) return;
+      if (state.wheelSpinsToday >= CONFIG.DAILY_WHEEL_MAX_SPINS) {
+        showToast("Ya usaste tus 3 giros de hoy. ¡Vuelve mañana!", "error");
+        return;
+      }
+
+      showRewardedAd(() => {
+        isSpinning = true;
+        const prizes = [
+          { label: "+50 COINS", coins: 50, energy: false },
+          { label: "+100 COINS", coins: 100, energy: false },
+          { label: "+150 COINS", coins: 150, energy: false },
+          { label: "+250 COINS", coins: 250, energy: false },
+          { label: "+500 COINS", coins: 500, energy: false },
+          { label: "⚡ +100% Energía", coins: 30, energy: true }
+        ];
+        const chosenIndex = Math.floor(Math.random() * prizes.length);
+        const prize = prizes[chosenIndex];
+
+        wheelRotation += 1440 + chosenIndex * 60 + 30;
+        wheelCircle.style.transform = `rotate(${wheelRotation}deg)`;
+
+        setTimeout(() => {
+          state.wheelSpinsToday += 1;
+          state.coins += prize.coins;
+          if (prize.energy) state.energy = CONFIG.MAX_ENERGY;
+          saveState();
+          updateUI();
+          document.getElementById("wheelResultText").textContent = `🎉 ¡Premio: ${prize.label}!`;
+          showToast(`🎡 ¡Ganaste ${prize.label}!`, "success");
+          isSpinning = false;
+        }, 3600);
+      });
+    });
+
+    /* ==========================================================================
+       7. MODO 2: MINI-JUEGO COHETE MULTIPLICADOR (CRASH EN CANVAS)
+       ========================================================================== */
+    const crashCanvas = document.getElementById("crashCanvas");
+    const ctx = crashCanvas.getContext("2d");
+
+    const crashGame = {
+      status: "IDLE", // IDLE | RUNNING | CRASHED
+      bet: 0,
+      startTime: 0,
+      multiplier: 1.0,
+      crashPoint: 1.0,
+      cashedOut: false,
+      lastNetProfit: 0,
+      canDoubleLastWin: false,
+      stars: Array.from({ length: 35 }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        size: Math.random() * 2 + 0.6,
+        speed: Math.random() * 0.002 + 0.0008
+      })),
+      particles: []
+    };
+
+    function resizeCrashCanvas() {
+      const box = crashCanvas.parentElement;
+      if (!box || box.clientWidth === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      crashCanvas.width = box.clientWidth * dpr;
+      crashCanvas.height = box.clientHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawCrashScene();
+    }
+    window.addEventListener("resize", resizeCrashCanvas);
+
+    function renderCrashHistory() {
+      const container = document.getElementById("crashHistory");
+      container.innerHTML = "";
+      state.crashHistory.slice(0, 10).forEach((val) => {
+        const pill = document.createElement("span");
+        let cls = "low";
+        if (val >= 2.0) cls = "high";
+        else if (val >= 1.4) cls = "mid";
+        pill.className = `crash-pill ${cls}`;
+        pill.textContent = `${val.toFixed(2)}x`;
+        container.appendChild(pill);
+      });
+    }
+
+    function generateCrashPoint() {
+      const r = Math.random();
+      // 6% probabilidad de crash instantáneo (margen sostenible de la casa)
+      if (r < 0.06) return 1.00;
+      const raw = 0.94 / (1 - r);
+      return Math.min(Math.max(1.01, Math.floor(raw * 100) / 100), 50.0);
+    }
+
+    function spawnExplosion(x, y) {
+      crashGame.particles = [];
+      for (let i = 0; i < 28; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1.5;
+        crashGame.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          color: i % 2 === 0 ? "#ff3366" : "#fbbf24"
+        });
+      }
+    }
+
+    function drawCrashScene() {
+      const w = crashCanvas.clientWidth;
+      const h = crashCanvas.clientHeight;
+      if (!w || !h) return;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Fondo estrellado en movimiento
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      crashGame.stars.forEach((s) => {
+        if (crashGame.status === "RUNNING") {
+          s.x -= s.speed * (1 + crashGame.multiplier * 0.25);
+          s.y += s.speed * 0.5;
+          if (s.x < 0) s.x = 1;
+          if (s.y > 1) s.y = 0;
+        }
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Cuadrícula sutil
+      ctx.strokeStyle = "rgba(0, 240, 255, 0.07)";
+      ctx.lineWidth = 1;
+      for (let gx = 40; gx < w; gx += 50) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+      }
+      for (let gy = 40; gy < h; gy += 45) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+      }
+
+      if (crashGame.status === "RUNNING" || crashGame.status === "CRASHED") {
+        const progress = Math.min(1, Math.log(crashGame.multiplier) / Math.log(8));
+        const endX = 35 + progress * (w - 85);
+        const endY = h - 30 - Math.pow(progress, 0.85) * (h - 75);
+
+        // Curva de trayectoria brillante
+        ctx.beginPath();
+        ctx.moveTo(25, h - 25);
+        ctx.quadraticCurveTo(endX * 0.55, h - 25, endX, endY);
+        ctx.strokeStyle = crashGame.status === "CRASHED" ? "#ff3366" : "#00f0ff";
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = crashGame.status === "CRASHED" ? "#ff3366" : "#00f0ff";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        if (crashGame.status === "RUNNING") {
+          // Dibujar Cohete
+          ctx.save();
+          ctx.translate(endX, endY);
+          ctx.rotate(-0.45);
+          ctx.font = "28px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("🚀", 0, 0);
+          ctx.restore();
+        }
+      } else {
+        // Cohete en plataforma de despegue
+        ctx.font = "30px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🚀", 42, h - 30);
+      }
+
+      // Partículas de explosión
+      crashGame.particles.forEach((p) => {
+        if (p.life <= 0) return;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.028;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    function crashLoop(now) {
+      if (crashGame.status === "RUNNING") {
+        const elapsedSec = (now - crashGame.startTime) / 1000;
+        crashGame.multiplier = Math.floor(Math.exp(0.085 * elapsedSec) * 100) / 100;
+
+        if (crashGame.multiplier >= crashGame.crashPoint) {
+          // ¡EXPLOSIÓN!
+          crashGame.multiplier = crashGame.crashPoint;
+          crashGame.status = "CRASHED";
+          triggerHaptic("error");
+
+          const w = crashCanvas.clientWidth;
+          const h = crashCanvas.clientHeight;
+          const progress = Math.min(1, Math.log(crashGame.multiplier) / Math.log(8));
+          const endX = 35 + progress * (w - 85);
+          const endY = h - 30 - Math.pow(progress, 0.85) * (h - 75);
+          spawnExplosion(endX, endY);
+
+          state.crashHistory.unshift(crashGame.crashPoint);
+          state.crashHistory = state.crashHistory.slice(0, 10);
+          saveState();
+          updateUI();
+
+          document.getElementById("crashMultiplier").textContent = `${crashGame.crashPoint.toFixed(2)}x`;
+          document.getElementById("crashMultiplier").style.color = "var(--neon-red)";
+          document.getElementById("crashStatus").textContent = crashGame.cashedOut
+            ? `💥 Explotó en ${crashGame.crashPoint.toFixed(2)}x (¡Ya retiraste!)`
+            : `💥 ¡Explotó en ${crashGame.crashPoint.toFixed(2)}x!`;
+
+          const btnAction = document.getElementById("btnCrashAction");
+          btnAction.className = "btn btn-green";
+          btnAction.disabled = false;
+          btnAction.textContent = "🚀 DESPEGAR DE NUEVO";
+        } else {
+          document.getElementById("crashMultiplier").textContent = `${crashGame.multiplier.toFixed(2)}x`;
+          document.getElementById("crashMultiplier").style.color = crashGame.cashedOut ? "var(--neon-green)" : "var(--neon-cyan)";
+
+          if (!crashGame.cashedOut) {
+            const potentialWin = Math.floor(crashGame.bet * crashGame.multiplier);
+            document.getElementById("btnCrashAction").textContent = `💰 RETIRAR GANANCIA (${formatCoins(potentialWin)} 🪙)`;
+          }
+        }
+      }
+
+      drawCrashScene();
+      if (crashGame.status === "RUNNING" || crashGame.particles.some((p) => p.life > 0)) {
+        requestAnimationFrame(crashLoop);
+      }
+    }
+
+    // Controles rápidos de apuesta
+    document.querySelectorAll(".quick-bet-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (crashGame.status === "RUNNING") return;
+        const input = document.getElementById("crashBetInput");
+        let val = parseInt(input.value, 10) || 10;
+        const act = btn.dataset.betAction;
+        if (act === "min") val = 10;
+        if (act === "half") val = Math.max(10, Math.floor(val / 2));
+        if (act === "double") val = Math.min(state.coins, val * 2);
+        if (act === "max") val = Math.max(10, state.coins);
+        input.value = val;
+      });
+    });
+
+    // Botón principal del Cohete (Despegar / Retirar)
+    document.getElementById("btnCrashAction").addEventListener("click", () => {
+      const btn = document.getElementById("btnCrashAction");
+
+      if (crashGame.status === "IDLE" || crashGame.status === "CRASHED") {
+        const betVal = Math.floor(Number(document.getElementById("crashBetInput").value));
+        if (!betVal || betVal < 10) {
+          showToast("La apuesta mínima es de 10 COINS.", "error");
+          return;
+        }
+        if (betVal > state.coins) {
+          showToast("No tienes suficientes COINS.", "error");
+          return;
+        }
+
+        // Ocultar banner de doble premio de ronda previa
+        document.getElementById("doubleWinBanner").classList.remove("visible");
+        crashGame.canDoubleLastWin = false;
+
+        state.coins -= betVal;
+        saveState();
+        updateUI();
+
+        crashGame.bet = betVal;
+        crashGame.status = "RUNNING";
+        crashGame.cashedOut = false;
+        crashGame.multiplier = 1.0;
+        crashGame.crashPoint = generateCrashPoint();
+        crashGame.startTime = performance.now();
+        crashGame.particles = [];
+
+        document.getElementById("crashStatus").textContent = "🚀 Cohete en ascenso...";
+        btn.className = "btn btn-gold";
+        btn.textContent = `💰 RETIRAR GANANCIA (${formatCoins(betVal)} 🪙)`;
+        triggerHaptic("medium");
+
+        requestAnimationFrame(crashLoop);
+      } else if (crashGame.status === "RUNNING" && !crashGame.cashedOut) {
+        // RETIRAR GANANCIA ANTES DE EXPLOSIÓN
+        crashGame.cashedOut = true;
+        const payout = Math.floor(crashGame.bet * crashGame.multiplier);
+        const netProfit = Math.max(0, payout - crashGame.bet);
+
+        state.coins += payout;
+        saveState();
+        updateUI();
+        triggerHaptic("success");
+
+        document.getElementById("crashStatus").textContent = `✅ ¡Retiraste ${formatCoins(payout)} COINS en ${crashGame.multiplier.toFixed(2)}x!`;
+        btn.disabled = true;
+        btn.textContent = "⏳ Esperando fin de ronda...";
+
+        // Activar opción de duplicar ganancia neta viendo anuncio (con tope anti-quiebra)
+        const doubleBonus = Math.min(netProfit, CONFIG.MAX_CRASH_DOUBLE_BONUS);
+        if (doubleBonus >= 5) {
+          crashGame.lastNetProfit = doubleBonus;
+          crashGame.canDoubleLastWin = true;
+          document.getElementById("doubleWinAmount").textContent = `+${formatCoins(doubleBonus)} COINS`;
+          document.getElementById("doubleWinBanner").classList.add("visible");
+        }
+      }
+    });
+
+    // Duplicar Premio del Cohete con Anuncio
+    document.getElementById("btnDoubleCrashAd").addEventListener("click", () => {
+      if (!crashGame.canDoubleLastWin || crashGame.lastNetProfit <= 0) return;
+      showRewardedAd(() => {
+        const bonus = crashGame.lastNetProfit;
+        crashGame.canDoubleLastWin = false;
+        crashGame.lastNetProfit = 0;
+        document.getElementById("doubleWinBanner").classList.remove("visible");
+
+        state.coins += bonus;
+        saveState();
+        updateUI();
+        showToast(`🔥 ¡Ganancia duplicada! Recibiste +${formatCoins(bonus)} COINS extra.`, "success");
+      });
+    });
+
+    /* ==========================================================================
+       8. REFERIDOS Y PORTAPAPELES
+       ========================================================================== */
+    function copyText(text, label) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`${label} copiado al portapapeles.`, "success");
+        }).catch(() => showToast("Copiado manual requerido.", "error"));
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        showToast(`${label} copiado al portapapeles.`, "success");
+      }
+      triggerHaptic("light");
+    }
+
+    document.getElementById("btnCopyRef").addEventListener("click", () => {
+      copyText(document.getElementById("refLinkText").textContent, "Enlace de invitación");
+    });
+
+    document.getElementById("btnShareTelegram").addEventListener("click", () => {
+      const refUrl = document.getElementById("refLinkText").textContent;
+      const shareText = encodeURIComponent("🚀 ¡Únete a CryptoMiner Tap & Crash! Mina monedas gratis, multiplica con el cohete y retira en USDT.");
+      const shareLink = `https://t.me/share/url?url=${encodeURIComponent(refUrl)}&text=${shareText}`;
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(shareLink);
+      } else {
+        window.open(shareLink, "_blank");
+      }
+    });
+
+    /* ==========================================================================
+       9. BILLETERA: DEPÓSITOS, RETIROS E HISTORIAL
+       ========================================================================== */
+    const subTabWithdrawBtn = document.getElementById("subTabWithdrawBtn");
+    const subTabDepositBtn = document.getElementById("subTabDepositBtn");
+    const withdrawPanel = document.getElementById("walletWithdrawPanel");
+    const depositPanel = document.getElementById("walletDepositPanel");
+
+    subTabWithdrawBtn.addEventListener("click", () => {
+      subTabWithdrawBtn.classList.add("active");
+      subTabDepositBtn.classList.remove("active");
+      withdrawPanel.style.display = "flex";
+      depositPanel.style.display = "none";
+    });
+
+    subTabDepositBtn.addEventListener("click", () => {
+      subTabDepositBtn.classList.add("active");
+      subTabWithdrawBtn.classList.remove("active");
+      depositPanel.style.display = "flex";
+      withdrawPanel.style.display = "none";
+    });
+
+    document.getElementById("btnCopyBep20").addEventListener("click", () => {
+      copyText(CONFIG.USDT_BEP20_ADDRESS, "Dirección BEP20");
+    });
+
+    document.getElementById("btnCopyBinance").addEventListener("click", () => {
+      copyText(CONFIG.BINANCE_PAY_ID, "Binance Pay ID");
+    });
+
+    // Enviar Solicitud de Depósito
+    document.getElementById("btnSubmitDeposit").addEventListener("click", () => {
+      const usdtAmount = parseFloat(document.getElementById("depositAmountUsdt").value);
+      const txId = document.getElementById("depositTxId").value.trim();
+
+      if (!usdtAmount || usdtAmount < 1) {
+        showToast("El depósito mínimo es de 1.00 USDT.", "error");
+        return;
+      }
+      if (txId.length < 5) {
+        showToast("Ingresa un TXID o ID de orden válido.", "error");
+        return;
+      }
+
+      const tx = {
+        id: `DEP-${Date.now().toString().slice(-6)}`,
+        type: "Depósito",
+        method: "USDT / Binance Pay",
+        coins: Math.floor(usdtAmount * CONFIG.COINS_PER_USDT),
+        usdt: usdtAmount.toFixed(2),
+        target: txId,
+        status: "Pendiente",
+        date: new Date().toLocaleDateString("es-ES")
+      };
+
+      state.transactions.unshift(tx);
+      saveState();
+      updateUI();
+
+      document.getElementById("depositAmountUsdt").value = "";
+      document.getElementById("depositTxId").value = "";
+      triggerHaptic("success");
+      showToast("📥 Solicitud de depósito enviada para verificación.", "success");
+    });
+
+    // Enviar Solicitud de Retiro
+    document.getElementById("btnSubmitWithdraw").addEventListener("click", () => {
+      const method = document.getElementById("withdrawMethod").value;
+      const address = document.getElementById("withdrawAddress").value.trim();
+      const amountCoins = Math.floor(Number(document.getElementById("withdrawAmount").value));
+
+      if (state.adsWatched < CONFIG.MIN_ADS_FOR_WITHDRAW) {
+        showToast(`Debes ver al menos ${CONFIG.MIN_ADS_FOR_WITHDRAW} anuncios para retirar (llevas ${state.adsWatched}).`, "error");
+        triggerHaptic("error");
+        return;
+      }
+
+      if (!amountCoins || amountCoins < CONFIG.MIN_WITHDRAW_COINS) {
+        showToast(`El mínimo de retiro es ${formatCoins(CONFIG.MIN_WITHDRAW_COINS)} COINS ($2.00 USDT).`, "error");
+        return;
+      }
+
+      if (amountCoins > state.coins) {
+        showToast("Saldo insuficiente en tu cuenta.", "error");
+        return;
+      }
+
+      if (address.length < 6) {
+        showToast("Ingresa una dirección BEP20 o ID de Binance Pay válido.", "error");
+        return;
+      }
+
+      // Descontar saldo al solicitar
+      state.coins -= amountCoins;
+      const tx = {
+        id: `RET-${Date.now().toString().slice(-6)}`,
+        type: "Retiro",
+        method,
+        coins: amountCoins,
+        usdt: (amountCoins / CONFIG.COINS_PER_USDT).toFixed(2),
+        target: address,
+        status: "Pendiente",
+        date: new Date().toLocaleDateString("es-ES")
+      };
+
+      state.transactions.unshift(tx);
+      saveState();
+      updateUI();
+
+      document.getElementById("withdrawAmount").value = "";
+      triggerHaptic("success");
+      showToast(`💸 Retiro de $${tx.usdt} USDT solicitado correctamente.`, "success");
+    });
+
+    function renderTransactions() {
+      const list = document.getElementById("txHistoryList");
+      if (!state.transactions.length) {
+        list.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px;">Aún no tienes depósitos ni retiros registrados.</div>`;
+        return;
+      }
+
+      list.innerHTML = state.transactions.map((tx) => {
+        const isApproved = tx.status === "Aprobado";
+        const badgeClass = isApproved ? "green" : "gold";
+        const sign = tx.type === "Depósito" ? "+" : "-";
+        const color = tx.type === "Depósito" ? "var(--neon-green)" : "var(--neon-gold)";
+        return `
+          <div class="tx-item">
+            <div class="tx-info">
+              <div class="tx-title">${escapeHtml(tx.type)} · <span style="color:${color}">${sign}${formatCoins(tx.coins)} 🪙 ($${escapeHtml(tx.usdt)})</span></div>
+              <div class="tx-sub">${escapeHtml(tx.method)} · ${escapeHtml(tx.target)} · ${escapeHtml(tx.date)}</div>
+            </div>
+            <span class="badge ${badgeClass}">${escapeHtml(tx.status)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    /* ==========================================================================
+       10. INICIALIZACIÓN DE LA APP
+       ========================================================================== */
+    initTelegram();
+    state = loadState();
+    regenEnergyTick();
+    updateChestButton();
+    updateUI();
+  </script>
+</body>
+</html>
